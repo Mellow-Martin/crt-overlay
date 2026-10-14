@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CRT Overlay</title>
+<!--
+  Animated CRT scanline overlay — transparent background, for use as a browser/link source.
+  Fills whatever size the source is set to (1080x1920 vertical or 1920x1080 landscape).
+
+  Tweak with URL params, e.g.  crt-overlay.html?lines=0.25&gap=4&roll=1&flicker=1&vignette=1&rgb=0
+    lines    scanline darkness 0–1           (default 0.22)
+    gap      scanline spacing in px           (default 4)
+    roll     rolling refresh bar on/off       (default 1)
+    speed    seconds per roll pass            (default 7)
+    flicker  subtle brightness flicker on/off (default 1)
+    vignette darkened edges on/off            (default 1)
+    rgb      RGB phosphor mask on/off         (default 0)
+-->
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: transparent;
+  }
+  .layer { position: fixed; inset: 0; pointer-events: none; }
+
+  /* Static scanlines */
+  #scan {
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,var(--lines)) 0px,
+      rgba(0,0,0,var(--lines)) calc(var(--gap) / 2),
+      rgba(0,0,0,0) calc(var(--gap) / 2),
+      rgba(0,0,0,0) var(--gap)
+    );
+    animation: drift 0.12s steps(2) infinite;
+  }
+  /* Tiny 1px jitter so lines feel "live" without shimmering */
+  @keyframes drift {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(1px); }
+  }
+
+  /* Optional RGB phosphor mask */
+  #rgb {
+    display: none;
+    background: repeating-linear-gradient(
+      to right,
+      rgba(255,0,0,0.05) 0px, rgba(255,0,0,0.05) 1px,
+      rgba(0,255,0,0.05) 1px, rgba(0,255,0,0.05) 2px,
+      rgba(0,0,255,0.05) 2px, rgba(0,0,255,0.05) 3px
+    );
+    mix-blend-mode: screen;
+  }
+
+  /* Rolling refresh bar */
+  #roll {
+    height: 18%;
+    top: -20%;
+    bottom: auto;
+    background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0) 0%,
+      rgba(255,255,255,0.045) 45%,
+      rgba(255,255,255,0.07) 50%,
+      rgba(255,255,255,0.045) 55%,
+      rgba(255,255,255,0) 100%
+    );
+    animation: roll var(--speed) linear infinite;
+  }
+  @keyframes roll {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(700%); }
+  }
+
+  /* Subtle flicker */
+  #flicker {
+    background: rgba(0,0,0,0.035);
+    animation: flicker 0.15s infinite;
+  }
+  @keyframes flicker {
+    0%   { opacity: 0.6; }
+    20%  { opacity: 0.2; }
+    40%  { opacity: 0.8; }
+    60%  { opacity: 0.3; }
+    80%  { opacity: 0.7; }
+    100% { opacity: 0.4; }
+  }
+
+  /* Vignette / tube edges */
+  #vignette {
+    background: radial-gradient(
+      ellipse at center,
+      rgba(0,0,0,0) 58%,
+      rgba(0,0,0,0.22) 82%,
+      rgba(0,0,0,0.55) 100%
+    );
+  }
+</style>
+</head>
+<body>
+  <div id="rgb" class="layer"></div>
+  <div id="scan" class="layer"></div>
+  <div id="flicker" class="layer"></div>
+  <div id="roll" class="layer"></div>
+  <div id="vignette" class="layer"></div>
+
+<script>
+  const p = new URLSearchParams(location.search);
+  const num = (k, d) => (p.has(k) && !isNaN(parseFloat(p.get(k)))) ? parseFloat(p.get(k)) : d;
+  const on  = (k, d) => p.has(k) ? p.get(k) !== '0' : d;
+  const root = document.documentElement.style;
+
+  root.setProperty('--lines', num('lines', 0.22));
+  root.setProperty('--gap', num('gap', 4) + 'px');
+  root.setProperty('--speed', num('speed', 7) + 's');
+
+  if (!on('roll', true))     document.getElementById('roll').style.display = 'none';
+  if (!on('flicker', true))  document.getElementById('flicker').style.display = 'none';
+  if (!on('vignette', true)) document.getElementById('vignette').style.display = 'none';
+  if (on('rgb', false))      document.getElementById('rgb').style.display = 'block';
+</script>
+</body>
+</html>
